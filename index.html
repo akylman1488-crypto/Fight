@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HAZBIN FIGHTERS — 2D Файтинг</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Montserrat:wght@400;700;900&display=swap');
+
+  * {
+    box-sizing: border-box;
+    user-select: none;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background: radial-gradient(circle at center, #2b060e 0%, #0d0205 100%);
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  #game-wrapper {
+    position: relative;
+    width: 1100px;
+    max-width: 98vw;
+    border: 3px solid #d4af37;
+    border-radius: 12px;
+    box-shadow: 0 0 40px rgba(220, 20, 60, 0.55), inset 0 0 20px rgba(0,0,0,0.8);
+    background: #120408;
+    overflow: hidden;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #16050a;
+  }
+
+  /* UI OVERLAYS */
+  #menu-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(18,3,8,0.95) 0%, rgba(36,6,14,0.92) 100%);
+    display: flex;
+    flex-direction: column;
+    padding: 18px 26px;
+    z-index: 10;
+    overflow-y: auto;
+  }
+
+  .title-box {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  .title-box h1 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 42px;
+    margin: 0;
+    letter-spacing: 3px;
+    color: #ff2a4b;
+    text-shadow: 0 0 15px rgba(255,42,75,0.8), 3px 3px 0 #000;
+  }
+
+  .title-box span {
+    color: #ffd700;
+    font-size: 13px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+
+  .top-controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+
+  .pill-group {
+    display: flex;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid #6b1d2f;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .pill-btn {
+    background: transparent;
+    color: #ccc;
+    border: none;
+    padding: 8px 16px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  .pill-btn:hover {
+    color: #fff;
+    background: rgba(255,42,75,0.2);
+  }
+
+  .pill-btn.active {
+    background: #d91c3c;
+    color: #fff;
+    box-shadow: 0 0 12px rgba(217,28,60,0.6);
+  }
+
+  .select-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr 1fr;
+    gap: 16px;
+    flex: 1;
+    align-items: stretch;
+  }
+
+  .player-panel {
+    background: rgba(0,0,0,0.45);
+    border: 2px solid #591625;
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .player-panel.p1 { border-color: #ff3355; }
+  .player-panel.p2 { border-color: #00d2ff; }
+
+  .panel-header {
+    font-family: 'Oswald', sans-serif;
+    font-size: 20px;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .char-name-big {
+    font-size: 24px;
+    font-weight: 900;
+    margin: 4px 0;
+  }
+
+  .char-role {
+    font-size: 12px;
+    color: #ffd700;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .skills-list {
+    font-size: 12px;
+    line-height: 1.45;
+    background: rgba(255,255,255,0.05);
+    padding: 8px 10px;
+    border-radius: 6px;
+    border-left: 3px solid #ffd700;
+  }
+
+  .skills-list div {
+    margin-bottom: 4px;
+  }
+
+  .skills-list b {
+    color: #ff7a90;
+  }
+
+  .roster-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .roster-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .char-card {
+    background: rgba(255,255,255,0.06);
+    border: 2px solid #4a1522;
+    border-radius: 8px;
+    padding: 10px 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s, background 0.15s;
+    position: relative;
+  }
+
+  .char-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255,255,255,0.12);
+  }
+
+  .char-card.sel-p1 {
+    border-color: #ff3355;
+    box-shadow: 0 0 14px rgba(255, 51, 85, 0.5);
+  }
+
+  .char-card.sel-p2 {
+    border-color: #00d2ff;
+    box-shadow: 0 0 14px rgba(0, 210, 255, 0.5);
+  }
+
+  .char-card.sel-p1.sel-p2 {
+    border-color: #ffd700;
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.7);
+  }
+
+  .char-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    margin: 0 auto 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 18px;
+    border: 2px solid rgba(255,255,255,0.4);
+  }
+
+  .char-card-name {
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  .tag-p1, .tag-p2 {
+    position: absolute;
+    top: -8px;
+    font-size: 10px;
+    font-weight: 900;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .tag-p1 { left: 4px; background: #ff3355; color: #fff; }
+  .tag-p2 { right: 4px; background: #00d2ff; color: #000; }
+
+  .controls-hint {
+    font-size: 11px;
+    color: #ccc;
+    margin-top: 8px;
+    background: rgba(0,0,0,0.4);
+    padding: 6px 8px;
+    border-radius: 6px;
+  }
+
+  .start-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 12px;
+  }
+
+  .btn-fight {
+    background: linear-gradient(135deg, #ff1e42 0%, #a80020 100%);
+    border: 2px solid #ffd700;
+    color: #fff;
+    font-family: 'Oswald', sans-serif;
+    font-size: 26px;
+    letter-spacing: 3px;
+    padding: 10px 44px;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 0 25px rgba(255, 30, 66, 0.7);
+    transition: 0.2s;
+  }
+
+  .btn-fight:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 35px rgba(255, 215, 0, 0.8);
+  }
+
+  .top-bar-btns {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    z-index: 20;
+    display: flex;
+    gap: 8px;
+  }
+
+  .mini-btn {
+    background: rgba(0,0,0,0.65);
+    color: #ffd700;
+    border: 1px solid #ffd700;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mini-btn:hover { background: rgba(255,215,0,0.2); }
+
+  #select-turn-hint {
+    text-align: center;
+    font-size: 13px;
+    color: #ffd700;
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+
+  #post-match-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 2, 5, 0.82);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 15;
+  }
+
+  #post-match-overlay h2 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 52px;
+    color: #ffd700;
+    text-shadow: 0 0 20px #ff1e42;
+    margin: 0 0 10px;
+  }
+
+  #post-match-overlay p {
+    font-size: 18px;
+    margin-bottom: 24px;
+    color: #eee;
+  }
+
+  .post-btns {
+    display: flex;
+    gap: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-wrapper">
+  <div class="top-bar-btns">
+    <button class="mini-btn" id="btn-sound" onclick="toggleSound()">🔊 Звук: ВКЛ</button>
+    <button class="mini-btn" id="btn-back-menu" style="display:none;" onclick="returnToMenu()">🏠 Меню</button>
+  </div>
+
+  <canvas id="gameCanvas" width="1100" height="600"></canvas>
+
+  <!-- ГЛАВНОЕ МЕНЮ / ВЫБОР ПЕРСОНАЖЕЙ -->
+  <div id="menu-overlay">
+    <div class="title-box">
+      <h1>HAZBIN FIGHTERS</h1>
+      <span>Битва за Пентаграмм-Сити</span>
+    </div>
+
+    <div class="top-controls">
+      <div class="pill-group" id="mode-select">
+        <button class="pill-btn active" onclick="setMode('bot')">🤖 ПРОТИВ БОТА</button>
+        <button class="pill-btn" onclick="setMode('pvp')">👥 С ДРУГОМ (2 ИГРОКА)</button>
+      </div>
+
+      <div class="pill-group" id="diff-select">
+        <button class="pill-btn" onclick="setDiff('easy')">Легко</button>
+        <button class="pill-btn active" onclick="setDiff('normal')">Нормально</button>
+        <button class="pill-btn" onclick="setDiff('hard')">Хардкор</button>
+      </div>
+
+      <div class="pill-group" id="arena-select">
+        <button class="pill-btn active" onclick="setArena('hotel')">🏨 Отель Хазбин</button>
+        <button class="pill-btn" onclick="setArena('voxtek')">📺 Башня ВоксТек</button>
+        <button class="pill-btn" onclick="setArena('heaven')">👼 Врата Рая</button>
+      </div>
+    </div>
+
+    <div class="select-grid">
+      <!-- ИГРОК 1 -->
+      <div class="player-panel p1">
+        <div>
+          <div class="panel-header">
+            <span style="color:#ff3355">ИГРОК 1</span>
+            <span style="font-size:12px; color:#aaa;">(Клик ЛКМ по карте)</span>
+          </div>
+          <div class="char-name-big" id="p1-name">Аластор</div>
+          <div class="char-role" id="p1-role">Радио-Демон</div>
+          <div class="skills-list" id="p1-skills"></div>
+        </div>
+        <div class="controls-hint">
+          <b>Управление И1:</b><br>
+          <b>A / D</b> — Движение | <b>W</b> — Прыжок | <b>S</b> — Блок<br>
+          <b>F</b> — Удар | <b>G</b> — Скил 1 | <b>H</b> — Скил 2
+        </div>
+      </div>
+
+      <!-- СЕТКА ПЕРСОНАЖЕЙ -->
+      <div class="roster-box">
+        <div>
+          <div id="select-turn-hint">ЛКМ — выбрать за Игрока 1 | ПКМ (или кнопка ниже) — за Игрока 2 / Бота</div>
+          <div style="text-align:center; margin-bottom:8px;">
+            <div class="pill-group" style="display:inline-flex;">
+              <button class="pill-btn active" id="pick-target-1" onclick="setPickTarget(1)">Выбирать для И1</button>
+              <button class="pill-btn" id="pick-target-2" onclick="setPickTarget(2)">Выбирать для И2/Бота</button>
+            </div>
+          </div>
+          <div class="roster-grid" id="roster-grid"></div>
+        </div>
+
+        <div class="start-area">
+          <button class="btn-fight" onclick="startMatch()">В БОЙ!</button>
+        </div>
+      </div>
+
+      <!-- ИГРОК 2 / БОТ -->
+      <div class="player-panel p2">
+        <div>
+          <div class="panel-header">
+            <span style="color:#00d2ff" id="p2-header-title">БОТ</span>
+            <span style="font-size:12px; color:#aaa;">(ПКМ по карте)</span>
+          </div>
+          <div class="char-name-big" id="p2-name">Вокс</div>
+          <div class="char-role" id="p2-role">ТВ-Демон</div>
+          <div class="skills-list" id="p2-skills"></div>
+        </div>
+        <div class="controls-hint" id="p2-controls-hint">
+          <b>ИИ управляет этим бойцом.</b><br>
+          Переключите на «С другом», чтобы играть вдвоём на одной клавиатуре!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ОВЕРЛЕЙ ПОСЛЕ МАТЧА -->
+  <div id="post-match-overlay">
+    <h2 id="winner-title">ПОБЕДА!</h2>
+    <p id="winner-sub">Аластор одержал верх!</p>
+    <div class="post-btns">
+      <button class="btn-fight" style="font-size:20px; padding:10px 28px;" onclick="startMatch()">РЕВАНШ</button>
+      <button class="btn-fight" style="font-size:20px; padding:10px 28px; background:#333;" onclick="returnToMenu()">В МЕНЮ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// =========================================================
+// АУДИО-СИНТЕЗАТОР (Web Audio API — без внешних файлов)
+// =========================================================
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+let soundEnabled = true;
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  document.getElementById('btn-sound').innerText = soundEnabled ? '🔊 Звук: ВКЛ' : '🔇 Звук: ВЫКЛ';
+}
+
+function playSound(type) {
+  if (!soundEnabled) return;
+  initAudio();
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  if (type === 'hit') {
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(160, now);
+    osc.frequency.exponentialRampToValueAtTime(45, now + 0.12);
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+    osc.start(now); osc.stop(now + 0.12);
+  } else if (type === 'block') {
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(420, now);
+    osc.frequency.exponentialRampToValueAtTime(220, now + 0.08);
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+    osc.start(now); osc.stop(now + 0.08);
+  } else if (type === 'swing') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(300, now);
+    osc.frequency.exponentialRampToValueAtTime(120, now + 0.08);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+    osc.start(now); osc.stop(now + 0.08);
+  } else if (type === 'laser') {
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(750, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now + 0.22);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+    osc.start(now); osc.stop(now + 0.22);
+  } else if (type === 'guitar') {
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.setValueAtTime(330, now + 0.05);
+    osc.frequency.exponentialRampToValueAtTime(110, now + 0.3);
+    gain.gain.setValueAtTime(0.22, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    osc.start(now); osc.stop(now + 0.3);
+  } else if (type === 'magic') {
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(380, now);
+    osc.frequency.exponentialRampToValueAtTime(860, now + 0.2);
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+    osc.start(now); osc.stop(now + 0.22);
+  } else if (type === 'ko') {
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(190, now);
+    osc.frequency.exponentialRampToValueAtTime(30, now + 0.6);
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+    osc.start(now); osc.stop(now + 0.6);
+  } else if (type === 'jump') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(360, now + 0.1);
+    gain.gain.setValueAtTime(0.09, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    osc.start(now); osc.stop(now + 0.1);
+  }
+}
+
+// =========================================================
+// БАЗА ПЕРСОНАЖЕЙ (ХАРАКТЕРИСТИКИ И СКИЛЫ)
+// =========================================================
+const CHARACTERS = [
+  {
+    id: 'alastor',
+    name: 'Аластор',
+    role: 'Радио-Демон',
+    color: '#d91636',
+    accent: '#ff4d6d',
+    hp: 100,
+    speed: 5.3,
+    jump: 14.5,
+    basicDmg: 8,
+    basicName: 'Удар микрофонной тростью',
+    skill1Name: 'Теневые щупальца',
+    skill1Desc: 'Щупальца бьют из земли перед собой и подбрасывают врага (16 урона, кд 3.2с).',
+    skill1Cd: 3200,
+    skill2Name: 'Радио-помехи',
+    skill2Desc: 'Мощная волна статики вокруг Аластора, отталкивает врага (20 урона, кд 5с).',
+    skill2Cd: 5000
+  },
+  {
+    id: 'vox',
+    name: 'Вокс',
+    role: 'ТВ-Оверлорд',
+    color: '#00a8ff',
+    accent: '#70f8ff',
+    hp: 100,
+    speed: 5.6,
+    jump: 14.2,
+    basicDmg: 8,
+    basicName: 'Электро-хук',
+    skill1Name: 'Гипно-луч',
+    skill1Desc: 'Быстрый плазменный выстрел с экрана на всю арену (14 урона, кд 2.6с).',
+    skill1Cd: 2600,
+    skill2Name: 'Кибер-рывок',
+    skill2Desc: 'Молниеносный рывок в форме тока сквозь врага (19 урона, кд 4.5с).',
+    skill2Cd: 4500
+  },
+  {
+    id: 'adam',
+    name: 'Адам',
+    role: 'Первый Человек',
+    color: '#f5b800',
+    accent: '#fff3a1',
+    hp: 112,
+    speed: 4.8,
+    jump: 14.0,
+    basicDmg: 10,
+    basicName: 'Удар гитарой-топором',
+    skill1Name: 'Святой аккорд',
+    skill1Desc: 'Золотая звуковая волна с гитары прорезает арену (16 урона, кд 3.2с).',
+    skill1Cd: 3200,
+    skill2Name: 'Небесный обвал',
+    skill2Desc: 'Ангельский прыжок и сокрушительный удар светом по площади (23 урона, кд 5.5с).',
+    skill2Cd: 5500
+  },
+  {
+    id: 'lucifer',
+    name: 'Люцифер',
+    role: 'Король Ада',
+    color: '#f2f2f2',
+    accent: '#ff3838',
+    hp: 105,
+    speed: 5.8,
+    jump: 15.5,
+    basicDmg: 9,
+    basicName: 'Удар яблочной тростью',
+    skill1Name: 'Огненные уточки',
+    skill1Desc: 'Запускает залп из 3 взрывных огненных уточек! (по 7 урона, кд 3с).',
+    skill1Cd: 3000,
+    skill2Name: 'Крылья Серафима',
+    skill2Desc: 'Раскрывает 6 крыльев и несётся в адском пламени (22 урона, кд 5с).',
+    skill2Cd: 5000
+  },
+  {
+    id: 'charlie',
+    name: 'Чарли',
+    role: 'Принцесса Ада',
+    color: '#e62e4d',
+    accent: '#ffcf56',
+    hp: 105,
+    speed: 5.7,
+    jump: 15.0,
+    basicDmg: 8,
+    basicName: 'Демонический выпад',
+    skill1Name: 'Фейерверк Надежды',
+    skill1Desc: 'Бросает искрящийся огненный шар с эффектом взрыва (15 урона, кд 2.8с).',
+    skill1Cd: 2800,
+    skill2Name: 'Бросок Трезубца',
+    skill2Desc: 'Призывает трезубец и делает мощный таранный рывок (20 урона, кд 4.6с).',
+    skill2Cd: 4600
+  },
+  {
+    id: 'angel',
+    name: 'Энджел Даст',
+    role: 'Паук-Стрелок',
+    color: '#ff70a6',
+    accent: '#ffffff',
+    hp: 95,
+    speed: 6.2,
+    jump: 15.5,
+    basicDmg: 7,
+    basicName: 'Град ударов (4 руки)',
+    skill1Name: 'Томми-Ган',
+    skill1Desc: 'Стреляет очередью из 4 быстрых пуль (по 4 урона, кд 2.4с).',
+    skill1Cd: 2400,
+    skill2Name: 'Паучий кульбит',
+    skill2Desc: 'Акробатический прыжок с паутиной и серией пинков (18 урона, кд 4.2с).',
+    skill2Cd: 4200
+  }
+];
+
+// =========================================================
+// ГЛОБАЛЬНЫЕ НАСТРОЙКИ И СОСТОЯНИЕ
+// =========================================================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const GROUND_Y = 515;
+const GRAVITY = 0.72;
+
+let gameMode = 'bot'; // 'bot' | 'pvp'
+let botDiff = 'normal'; // 'easy' | 'normal' | 'hard'
+let selectedArena = 'hotel';
+let pickTarget = 1;
+
+let p1CharIdx = 0; // Аластор
+let p2CharIdx = 1; // Вокс
+
+let gameState = 'MENU'; // MENU, INTRO, FIGHTING, ROUND_END, MATCH_END
+let stateTimer = 0;
+let roundNumber = 1;
+let roundTime = 99;
+let p1Wins = 0;
+let p2Wins = 0;
+let screenShake = 0;
+let slowMoTimer = 0;
+
+let p1 = null;
+let p2 = null;
+let projectiles = [];
+let effects = [];
+let particles = [];
+let floatingTexts = [];
+
+const keys = {};
+
+// =========================================================
+// МЕНЮ И ВЫБОР ПЕРСОНАЖЕЙ
+// =========================================================
+function initMenu() {
+  const grid = document.getElementById('roster-grid');
+  grid.innerHTML = '';
+  CHARACTERS.forEach((ch, idx) => {
+    const card = document.createElement('div');
+    card.className = 'char-card';
+    card.id = 'char-card-' + idx;
+    card.innerHTML = `
+      <div class="char-badge" style="background:${ch.color}; color:#fff; box-shadow:0 0 10px ${ch.color}">
+        ${ch.name[0]}
+      </div>
+      <div class="char-card-name">${ch.name}</div>
+    `;
+    card.addEventListener('click', () => {
+      if (pickTarget === 1) p1CharIdx = idx;
+      else p2CharIdx = idx;
+      updateMenuUI();
+    });
+    card.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      p2CharIdx = idx;
+      updateMenuUI();
+    });
+    grid.appendChild(card);
+  });
+  updateMenuUI();
+}
+
+function setPickTarget(t) {
+  pickTarget = t;
+  document.getElementById('pick-target-1').classList.toggle('active', t === 1);
+  document.getElementById('pick-target-2').classList.toggle('active', t === 2);
+}
+
+function setMode(m) {
+  gameMode = m;
+  const btns = document.getElementById('mode-select').children;
+  btns[0].classList.toggle('active', m === 'bot');
+  btns[1].classList.toggle('active', m === 'pvp');
+  document.getElementById('diff-select').style.display = m === 'bot' ? 'flex' : 'none';
+  document.getElementById('p2-header-title').innerText = m === 'bot' ? 'БОТ' : 'ИГРОК 2';
+  document.getElementById('p2-controls-hint').innerHTML = m === 'bot'
+    ? '<b>ИИ управляет этим бойцом.</b><br>Переключите на «С другом», чтобы играть вдвоём!'
+    : '<b>Управление И2:</b><br><b>← / →</b> — Движение | <b>↑</b> — Прыжок | <b>↓</b> — Блок<br><b>J</b> (или Num1) — Удар | <b>K</b> (Num2) — Скил 1 | <b>L</b> (Num3) — Скил 2';
+}
+
+function setDiff(d) {
+  botDiff = d;
+  const btns = document.getElementById('diff-select').children;
+  btns[0].classList.toggle('active', d === 'easy');
+  btns[1].classList.toggle('active', d === 'normal');
+  btns[2].classList.toggle('active', d === 'hard');
+}
+
+function setArena(a) {
+  selectedArena = a;
+  const btns = document.getElementById('arena-select').children;
+  btns[0].classList.toggle('active', a === 'hotel');
+  btns[1].classList.toggle('active', a === 'voxtek');
+  btns[2].classList.toggle('active', a === 'heaven');
+}
+
+function updateMenuUI() {
+  CHARACTERS.forEach((_, idx) => {
+    const card = document.getElementById('char-card-' + idx);
+    card.classList.remove('sel-p1', 'sel-p2');
+    card.querySelectorAll('.tag-p1, .tag-p2').forEach(el => el.remove());
+
+    if (idx === p1CharIdx) {
+      card.classList.add('sel-p1');
+      const tag = document.createElement('span');
+      tag.className = 'tag-p1';
+      tag.innerText = 'P1';
+      card.appendChild(tag);
+    }
+    if (idx === p2CharIdx) {
+      card.classList.add('sel-p2');
+      const tag = document.createElement('span');
+      tag.className = 'tag-p2';
+      tag.innerText = gameMode === 'bot' ? 'BOT' : 'P2';
+      card.appendChild(tag);
+    }
+  });
+
+  const c1 = CHARACTERS[p1CharIdx];
+  document.getElementById('p1-name').innerText = c1.name;
+  document.getElementById('p1-name').style.color = c1.accent;
+  document.getElementById('p1-role').innerText = c1.role + ` • HP: ${c1.hp}`;
+  document.getElementById('p1-skills').innerHTML = `
+    <div><b>Удар [F]:</b> ${c1.basicName} (${c1.basicDmg} ур.)</div>
+    <div><b>Скил 1 [G]:</b> ${c1.skill1Name} — ${c1.skill1Desc}</div>
+    <div><b>Скил 2 [H]:</b> ${c1.skill2Name} — ${c1.skill2Desc}</div>
+  `;
+
+  const c2 = CHARACTERS[p2CharIdx];
+  document.getElementById('p2-name').innerText = c2.name;
+  document.getElementById('p2-name').style.color = c2.accent;
+  document.getElementById('p2-role').innerText = c2.role + ` • HP: ${c2.hp}`;
+  document.getElementById('p2-skills').innerHTML = `
+    <div><b>Удар:</b> ${c2.basicName} (${c2.basicDmg} ур.)</div>
+    <div><b>Скил 1:</b> ${c2.skill1Name} — ${c2.skill1Desc}</div>
+    <div><b>Скил 2:</b> ${c2.skill2Name} — ${c2.skill2Desc}</div>
+  `;
+}
+
+// =========================================================
+// КЛАСС БОЙЦА
+// =========================================================
+class Fighter {
+  constructor(charData, x, facing, isPlayer1, isBot) {
+    this.data = charData;
+    this.x = x;
+    this.y = GROUND_Y;
+    this.vx = 0;
+    this.vy = 0;
+    this.w = 56;
+    this.h = 112;
+    this.facing = facing; // 1 = right, -1 = left
+    this.isPlayer1 = isPlayer1;
+    this.isBot = isBot;
+
+    this.maxHp = charData.hp;
+    this.hp = charData.hp;
+    this.trailHp = charData.hp;
+
+    this.onGround = true;
+    this.blocking = false;
+    this.stunTimer = 0;
+    this.attackTimer = 0;
+    this.attackType = null; // 'basic' | 'skill1' | 'skill2'
+    this.attackHitDone = false;
+
+    this.cd1 = 0;
+    this.cd2 = 0;
+    this.animFrame = 0;
+    this.dashActive = 0;
+
+    // AI state
+    this.aiDecisionTimer = 0;
+    this.aiAction = 'idle';
+  }
+
+  get centerX() { return this.x; }
+  get centerY() { return this.y - this.h / 2; }
+
+  update(dt, opponent) {
+    this.animFrame += dt * 0.01;
+    if (this.trailHp > this.hp) {
+      this.trailHp = Math.max(this.hp, this.trailHp - dt * 0.04);
+    }
+
+    if (this.cd1 > 0) this.cd1 = Math.max(0, this.cd1 - dt);
+    if (this.cd2 > 0) this.cd2 = Math.max(0, this.cd2 - dt);
+
+    if (this.stunTimer > 0) {
+      this.stunTimer -= dt;
+      this.blocking = false;
+    }
+
+    if (this.attackTimer > 0) {
+      this.attackTimer -= dt;
+      this.processAttackActive(opponent);
+      if (this.attackTimer <= 0) {
+        this.attackType = null;
+        this.dashActive = 0;
+      }
+    }
+
+    // Поворот лицом к врагу, когда не атакуем и не в стане
+    if (this.stunTimer <= 0 && this.attackTimer <= 0) {
+      this.facing = opponent.x >= this.x ? 1 : -1;
+    }
+
+    // Управление
+    if (gameState === 'FIGHTING' && this.stunTimer <= 0) {
+      if (this.isBot) {
+        this.updateAI(dt, opponent);
+      } else {
+        this.updateInput();
+      }
+    } else if (this.stunTimer > 0) {
+      this.vx *= 0.88;
+    } else {
+      this.vx = 0;
+    }
+
+    // Физика
+    if (this.dashActive > 0) {
+      this.dashActive -= dt;
+    } else {
+      this.vy += GRAVITY * (dt / 16.6);
+    }
+
+    this.x += this.vx * (dt / 16.6);
+    this.y += this.vy * (dt / 16.6);
+
+    // Пол
+    if (this.y >= GROUND_Y) {
+      this.y = GROUND_Y;
+      this.vy = 0;
+      this.onGround = true;
+    } else {
+      this.onGround = false;
+    }
+
+    // Границы арены
+    if (this.x < 45) this.x = 45;
+    if (this.x > canvas.width - 45) this.x = canvas.width - 45;
+
+    // Отталкивание при наложении тел
+    if (this.dashActive <= 0 && Math.abs(this.x - opponent.x) < 44 && Math.abs(this.y - opponent.y) < 90) {
+      const push = this.x < opponent.x ? -2.5 : 2.5;
+      this.x += push;
+    }
+  }
+
+  updateInput() {
+    let left, right, up, down, atk, sk1, sk2;
+    if (this.isPlayer1) {
+      left = keys['KeyA'];
+      right = keys['KeyD'];
+      up = keys['KeyW'];
+      down = keys['KeyS'];
+      atk = keys['KeyF'];
+      sk1 = keys['KeyG'];
+      sk2 = keys['KeyH'];
+    } else {
+      left = keys['ArrowLeft'];
+      right = keys['ArrowRight'];
+      up = keys['ArrowUp'];
+      down = keys['ArrowDown'];
+      atk = keys['KeyJ'] || keys['Numpad1'];
+      sk1 = keys['KeyK'] || keys['Numpad2'];
+      sk2 = keys['KeyL'] || keys['Numpad3'];
+    }
+
+    if (this.attackTimer > 0) {
+      if (this.dashActive <= 0) this.vx *= 0.8;
+      return;
+    }
+
+    this.blocking = down && this.onGround;
+
+    if (!this.blocking) {
+      if (left && !right) this.vx = -this.data.speed;
+      else if (right && !left) this.vx = this.data.speed;
+      else this.vx = 0;
+
+      if (up && this.onGround) {
+        this.vy = -this.data.jump;
+        this.onGround = false;
+        playSound('jump');
+      }
+
+      if (atk) this.startAttack('basic');
+      else if (sk1 && this.cd1 <= 0) this.startAttack('skill1');
+      else if (sk2 && this.cd2 <= 0) this.startAttack('skill2');
+    } else {
+      this.vx = 0;
+    }
+  }
+
+  updateAI(dt, opponent) {
+    if (this.attackTimer > 0) {
+      if (this.dashActive <= 0) this.vx *= 0.8;
+      return;
+    }
+
+    const dist = Math.abs(this.x - opponent.x);
+    this.aiDecisionTimer -= dt;
+
+    // Реакция на летящие снаряды (прыжок или блок)
+    const incomingProj = projectiles.find(p => p.owner !== this && Math.abs(p.x - this.x) < 160 && Math.sign(p.vx) === Math.sign(this.x - p.x));
+    if (incomingProj && botDiff !== 'easy' && this.onGround) {
+      if (Math.random() < (botDiff === 'hard' ? 0.65 : 0.35)) {
+        this.vy = -this.data.jump;
+        this.onGround = false;
+        return;
+      } else {
+        this.blocking = true;
+        this.vx = 0;
+        return;
+      }
+    }
+
+    // Реакция на атаку игрока вблизи
+    if (opponent.attackTimer > 0 && dist < 130 && botDiff !== 'easy') {
+      if (Math.random() < (botDiff === 'hard' ? 0.45 : 0.22) && this.onGround) {
+        this.blocking = true;
+        this.vx = 0;
+        return;
+      }
+    }
+
+    if (this.aiDecisionTimer <= 0) {
+      this.blocking = false;
+      const reactionSpeed = botDiff === 'hard' ? 140 : botDiff === 'normal' ? 240 : 400;
+      this.aiDecisionTimer = reactionSpeed + Math.random() * 180;
+
+      if (dist > 260) {
+        // Использовать дальний скил 1 или бежать
+        if (this.cd1 <= 0 && Math.random() < (botDiff === 'easy' ? 0.25 : 0.55)) {
+          this.startAttack('skill1');
+          return;
+        }
+        if (this.cd2 <= 0 && Math.random() < 0.35 && ['vox', 'lucifer', 'charlie', 'angel'].includes(this.data.id)) {
+          this.startAttack('skill2');
+          return;
+        }
+        this.aiAction = 'approach';
+      } else if (dist > 105) {
+        const r = Math.random();
+        if (this.cd2 <= 0 && r < 0.35) {
+          this.startAttack('skill2');
+          return;
+        } else if (this.cd1 <= 0 && r < 0.65) {
+          this.startAttack('skill1');
+          return;
+        }
+        this.aiAction = r < 0.85 ? 'approach' : 'retreat';
+      } else {
+        // Ближний бой
+        const r = Math.random();
+        if (r < (botDiff === 'easy' ? 0.4 : 0.62)) {
+          this.startAttack('basic');
+          return;
+        } else if (this.cd2 <= 0 && r < 0.8) {
+          this.startAttack('skill2');
+          return;
+        } else if (this.cd1 <= 0 && r < 0.92) {
+          this.startAttack('skill1');
+          return;
+        } else {
+          this.aiAction = 'retreat';
+        }
+      }
+    }
+
+    if (this.aiAction === 'approach') {
+      this.vx = this.facing * this.data.speed * (botDiff === 'easy' ? 0.8 : 1);
+      if (Math.random() < 0.015 && this.onGround) {
+        this.vy = -this.data.jump;
+      }
+    } else if (this.aiAction === 'retreat') {
+      this.vx = -this.facing * this.data.speed * 0.85;
+    } else {
+      this.vx = 0;
+    }
+  }
+
+  startAttack(type) {
+    this.attackType = type;
+    this.attackHitDone = false;
+    this.blocking = false;
+
+    if (type === 'basic') {
+      this.attackTimer = 240;
+      playSound('swing');
+    } else if (type === 'skill1') {
+      this.cd1 = this.data.skill1Cd;
+      this.attackTimer = 340;
+      this.triggerSkill1();
+    } else if (type === 'skill2') {
+      this.cd2 = this.data.skill2Cd;
+      this.attackTimer = 440;
+      this.triggerSkill2();
+    }
+  }
+
+  processAttackActive(opponent) {
+    if (this.attackType === 'basic' && !this.attackHitDone && this.attackTimer < 160) {
+      this.attackHitDone = true;
+      const reach = this.data.id === 'adam' || this.data.id === 'alastor' ? 98 : 84;
+      if (Math.abs((this.x + this.facing * 35) - opponent.x) < reach && Math.abs(this.y - opponent.y) < 95) {
+        dealDamage(this, opponent, this.data.basicDmg, this.facing * 6, -3, 220);
+        spawnParticles(opponent.x, opponent.centerY, this.data.accent, 10);
+      }
+    }
+  }
+
+  // --- СКИЛ 1 ДЛЯ КАЖДОГО ПЕРСОНАЖА ---
+  triggerSkill1() {
+    const id = this.data.id;
+    if (id === 'alastor') {
+      // Теневые щупальца на средней дистанции
+      playSound('magic');
+      const tx = this.x + this.facing * 135;
+      effects.push({
+        type: 'tentacles', x: tx, y: GROUND_Y, life: 450, maxLife: 450, color: '#8a001a',
+        owner: this, hitDone: false, dmg: 16
+      });
+    } else if (id === 'vox') {
+      // Гипно-луч (быстрый лазер)
+      playSound('laser');
+      projectiles.push({
+        type: 'vox_beam', owner: this, x: this.x + this.facing * 35, y: this.centerY - 12,
+        vx: this.facing * 15, vy: 0, r: 16, dmg: 14, color: '#00f0ff', life: 1200
+      });
+    } else if (id === 'adam') {
+      // Святой аккорд (золотая волна)
+      playSound('guitar');
+      projectiles.push({
+        type: 'holy_wave', owner: this, x: this.x + this.facing * 40, y: GROUND_Y - 50,
+        vx: this.facing * 11, vy: 0, r: 28, dmg: 16, color: '#ffd700', life: 1400
+      });
+    } else if (id === 'lucifer') {
+      // 3 огненные уточки!
+      playSound('magic');
+      [-1.5, 0, 1.5].forEach((vyOffset, idx) => {
+        projectiles.push({
+          type: 'duck', owner: this, x: this.x + this.facing * 30, y: this.centerY - 10,
+          vx: this.facing * (10 + idx * 1.2), vy: vyOffset - 1.5, gravity: 0.14,
+          r: 14, dmg: 7, color: '#ff6600', life: 1400
+        });
+      });
+    } else if (id === 'charlie') {
+      // Фейерверк Надежды
+      playSound('magic');
+      projectiles.push({
+        type: 'sparkle', owner: this, x: this.x + this.facing * 32, y: this.centerY - 5,
+        vx: this.facing * 11.5, vy: 0, r: 18, dmg: 15, color: '#ffcf56', life: 1300
+      });
+    } else if (id === 'angel') {
+      // Очередь из Томми-Гана (4 пули)
+      for (let i = 0; i < 4; i++) {
+        setTimeout(() => {
+          if (gameState !== 'FIGHTING' || this.stunTimer > 0) return;
+          playSound('laser');
+          projectiles.push({
+            type: 'bullet', owner: this, x: this.x + this.facing * 36, y: this.centerY - 6 + (Math.random() * 14 - 7),
+            vx: this.facing * 17, vy: 0, r: 6, dmg: 4, color: '#ff85b3', life: 900
+          });
+        }, i * 75);
+      }
+    }
+  }
+
+  // --- СКИЛ 2 ДЛЯ КАЖДОГО ПЕРСОНАЖА ---
+  triggerSkill2() {
+    const id = this.data.id;
+    if (id === 'alastor') {
+      // Радио-помехи (волна вокруг себя)
+      playSound('guitar');
+      effects.push({
+        type: 'radio_blast', x: this.x, y: this.centerY, life: 400, maxLife: 400,
+        owner: this, hitDone: false, dmg: 20, radius: 145
+      });
+    } else if (id === 'vox') {
+      // Кибер-рывок
+      playSound('laser');
+      this.dashActive = 300;
+      this.vx = this.facing * 16;
+      this.vy = 0;
+      effects.push({
+        type: 'dash_aura', owner: this, life: 320, maxLife: 320, color: '#00f0ff', hitDone: false, dmg: 19
+      });
+    } else if (id === 'adam') {
+      // Небесный обвал
+      playSound('guitar');
+      this.vy = -10;
+      this.vx = this.facing * 7;
+      setTimeout(() => {
+        if (gameState !== 'FIGHTING') return;
+        this.vy = 18;
+        effects.push({
+          type: 'heaven_slam', x: this.x + this.facing * 45, y: GROUND_Y, life: 420, maxLife: 420,
+          owner: this, hitDone: false, dmg: 23, radius: 135
+        });
+      }, 180);
+    } else if (id === 'lucifer') {
+      // Крылья Серафима (огненный рывок)
+      playSound('magic');
+      this.dashActive = 340;
+      this.vx = this.facing * 15;
+      this.vy = -2;
+      effects.push({
+        type: 'dash_aura', owner: this, life: 360, maxLife: 360, color: '#ff3838', hitDone: false, dmg: 22
+      });
+    } else if (id === 'charlie') {
+      // Бросок с трезубцем
+      playSound('magic');
+      this.dashActive = 310;
+      this.vx = this.facing * 14.5;
+      this.vy = 0;
+      effects.push({
+        type: 'dash_aura', owner: this, life: 330, maxLife: 330, color: '#ffcf56', hitDone: false, dmg: 20
+      });
+    } else if (id === 'angel') {
+      // Паучий кульбит вперед
+      playSound('jump');
+      this.dashActive = 300;
+      this.vy = -9;
+      this.vx = this.facing * 12.5;
+      effects.push({
+        type: 'dash_aura', owner: this, life: 340, maxLife: 340, color: '#ff70a6', hitDone: false, dmg: 18
+      });
+    }
+  }
+
+  // --- ОТРИСОВКА ПЕРСОНАЖА ---
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+
+    // Тень на полу
+    const shadowScale = Math.max(0.4, 1 - (GROUND_Y - this.y) / 280);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 32 * shadowScale, 8 * shadowScale, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Подсветка под игроком P1 / P2
+    ctx.strokeStyle = this.isPlayer1 ? 'rgba(255, 51, 85, 0.7)' : 'rgba(0, 210, 255, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 34 * shadowScale, 9 * shadowScale, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.scale(this.facing, 1);
+
+    // Покачивание при беге/дыхании
+    const bob = this.onGround ? Math.sin(this.animFrame * (Math.abs(this.vx) > 0.5 ? 2.5 : 0.7)) * 3 : 0;
+    ctx.translate(0, bob);
+
+    // Эффект стана (мигание белым)
+    if (this.stunTimer > 0 && Math.floor(this.stunTimer / 50) % 2 === 0) {
+      ctx.globalAlpha = 0.6;
+    }
+
+    // Щит блока
+    if (this.blocking) {
+      ctx.strokeStyle = '#ffd700';
+      ctx.fillStyle = 'rgba(255, 215, 0, 0.18)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(10, -56, 48, -Math.PI / 2, Math.PI / 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    this.drawCharacterSprite(ctx);
+
+    ctx.restore();
+  }
+
+  drawCharacterSprite(ctx) {
+    const id = this.data.id;
+    const isAtk = this.attackTimer > 0;
+    const atkSwing = isAtk ? Math.sin((this.attackTimer / 250) * Math.PI) * 28 : 0;
+
+    if (id === 'alastor') {
+      // Плащ/пиджак
+      ctx.fillStyle = '#9e0b22';
+      ctx.beginPath();
+      ctx.moveTo(-18, -82); ctx.lineTo(18, -82); ctx.lineTo(24, -10); ctx.lineTo(-24, -10); ctx.closePath();
+      ctx.fill();
+      // Полосы на пиджаке
+      ctx.fillStyle = '#30030b';
+      ctx.fillRect(-5, -80, 10, 45);
+      // Ноги
+      ctx.fillStyle = '#1a0508';
+      ctx.fillRect(-12, -14, 7, 14);
+      ctx.fillRect(5, -14, 7, 14);
+      // Голова
+      ctx.fillStyle = '#d4c3c7';
+      ctx.beginPath(); ctx.arc(0, -96, 17, 0, Math.PI * 2); ctx.fill();
+      // Волосы (каре) и оленьи уши
+      ctx.fillStyle = '#8f0a22';
+      ctx.beginPath();
+      ctx.moveTo(-20, -92); ctx.lineTo(-16, -114); ctx.lineTo(16, -114); ctx.lineTo(20, -90);
+      ctx.lineTo(8, -102); ctx.lineTo(-8, -102); ctx.closePath();
+      ctx.fill();
+      // Рожки и уши
+      ctx.fillStyle = '#1c0b0e';
+      ctx.fillRect(-12, -126, 4, 14);
+      ctx.fillRect(8, -126, 4, 14);
+      // Улыбка и монокль
+      ctx.fillStyle = '#ff2e4c';
+      ctx.beginPath(); ctx.arc(6, -98, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(6, -98, 6, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#ffd700';
+      ctx.fillRect(0, -90, 12, 4);
+      // Радио-трость
+      ctx.save();
+      ctx.translate(14, -55);
+      ctx.rotate((isAtk ? 1.1 : 0.25) + atkSwing * 0.02);
+      ctx.strokeStyle = '#222'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(0, 35); ctx.lineTo(0, -45); ctx.stroke();
+      ctx.fillStyle = '#ff2a4b';
+      ctx.beginPath(); ctx.arc(0, -50, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    else if (id === 'vox') {
+      // Костюм
+      ctx.fillStyle = '#1a2742';
+      ctx.fillRect(-18, -80, 36, 52);
+      ctx.fillStyle = '#00d2ff';
+      ctx.fillRect(-4, -76, 8, 34); // галстук
+      // Ноги
+      ctx.fillStyle = '#0d1321';
+      ctx.fillRect(-14, -28, 9, 28);
+      ctx.fillRect(5, -28, 9, 28);
+      // Голова-телевизор
+      ctx.fillStyle = '#222a38';
+      ctx.strokeStyle = '#00f0ff';
+      ctx.lineWidth = 2;
+      ctx.fillRect(-24, -122, 48, 40);
+      ctx.strokeRect(-24, -122, 48, 40);
+      // Экран
+      ctx.fillStyle = '#071a26';
+      ctx.fillRect(-19, -117, 38, 30);
+      // Неоновые глаза и улыбка
+      ctx.fillStyle = '#ff2e63';
+      ctx.beginPath(); ctx.arc(-6, -104, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(10, -104, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#00f0ff';
+      ctx.fillRect(-8, -94, 22, 4);
+      // Антенны
+      ctx.strokeStyle = '#00f0ff';
+      ctx.beginPath(); ctx.moveTo(-6, -122); ctx.lineTo(-14, -138); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(6, -122); ctx.lineTo(14, -138); ctx.stroke();
+      // Шляпа цилиндр
+      ctx.fillStyle = '#111';
+      ctx.fillRect(-15, -134, 30, 12);
+      // Кулак с молнией
+      ctx.fillStyle = isAtk ? '#00f0ff' : '#35496e';
+      ctx.beginPath(); ctx.arc(20 + atkSwing, -60, 10, 0, Math.PI * 2); ctx.fill();
+    }
+    else if (id === 'adam') {
+      // Золотые крылья сзади
+      ctx.fillStyle = '#ffdf6b';
+      ctx.beginPath();
+      ctx.moveTo(-10, -78); ctx.lineTo(-48, -115); ctx.lineTo(-34, -45); ctx.closePath();
+      ctx.fill();
+      // Белая роба с золотом
+      ctx.fillStyle = '#f5f5f5';
+      ctx.beginPath();
+      ctx.moveTo(-22, -84); ctx.lineTo(22, -84); ctx.lineTo(30, -4); ctx.lineTo(-30, -4); ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#f5b800';
+      ctx.fillRect(-10, -82, 20, 74);
+      // Голова-маска
+      ctx.fillStyle = '#1f1f29';
+      ctx.beginPath(); ctx.arc(0, -100, 18, 0, Math.PI * 2); ctx.fill();
+      // Рога-нимбы на маске
+      ctx.fillStyle = '#f5b800';
+      ctx.beginPath(); ctx.moveTo(-12, -114); ctx.lineTo(-22, -138); ctx.lineTo(-4, -118); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(12, -114); ctx.lineTo(22, -138); ctx.lineTo(4, -118); ctx.fill();
+      // Нимб над головой
+      ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(0, -132, 18, 5, 0, 0, Math.PI * 2); ctx.stroke();
+      // Светящиеся глаза и оскал
+      ctx.fillStyle = '#ffe600';
+      ctx.fillRect(-6, -104, 6, 4); ctx.fillRect(6, -104, 6, 4);
+      ctx.fillRect(-4, -94, 16, 4);
+      // Гитара-топор
+      ctx.save();
+      ctx.translate(16, -54);
+      ctx.rotate((isAtk ? 1.3 : -0.3) + atkSwing * 0.02);
+      ctx.fillStyle = '#ffd700';
+      ctx.fillRect(-3, -55, 6, 70);
+      ctx.beginPath(); ctx.moveTo(-18, -45); ctx.lineTo(18, -45); ctx.lineTo(12, -68); ctx.lineTo(-12, -68); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    else if (id === 'lucifer') {
+      // Белый сюртук и красный жилет
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(-18, -82); ctx.lineTo(18, -82); ctx.lineTo(24, -18); ctx.lineTo(-24, -18); ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#d91636';
+      ctx.fillRect(-9, -80, 18, 42);
+      // Крылья (при атаке/скиле 6 крыльев!)
+      if (this.dashActive > 0 || isAtk) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        for (let w = -1; w <= 1; w++) {
+          ctx.beginPath();
+          ctx.moveTo(-8, -70 + w * 12); ctx.lineTo(-55, -105 + w * 18); ctx.lineTo(-42, -55 + w * 15); ctx.closePath();
+          ctx.fill();
+        }
+      }
+      // Ноги
+      ctx.fillStyle = '#222';
+      ctx.fillRect(-11, -18, 7, 18); ctx.fillRect(4, -18, 7, 18);
+      // Голова
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(0, -96, 16, 0, Math.PI * 2); ctx.fill();
+      // Румянец (кружочки на щеках)
+      ctx.fillStyle = '#ff2a4b';
+      ctx.beginPath(); ctx.arc(4, -92, 4, 0, Math.PI * 2); ctx.fill();
+      // Глаза
+      ctx.fillStyle = '#ffdd00';
+      ctx.beginPath(); ctx.arc(6, -99, 3.5, 0, Math.PI * 2); ctx.fill();
+      // Белый цилиндр с яблоком и змеёй
+      ctx.fillStyle = '#f8f8f8';
+      ctx.fillRect(-20, -112, 40, 5);
+      ctx.fillRect(-14, -138, 28, 26);
+      ctx.fillStyle = '#d91636';
+      ctx.fillRect(-14, -118, 28, 5);
+      ctx.beginPath(); ctx.arc(6, -124, 5, 0, Math.PI * 2); ctx.fill(); // яблочко
+      // Трость с яблоком
+      ctx.save();
+      ctx.translate(15, -52);
+      ctx.rotate(isAtk ? 1.2 : 0.2);
+      ctx.fillStyle = '#222'; ctx.fillRect(-2, -40, 4, 65);
+      ctx.fillStyle = '#ff1e42'; ctx.beginPath(); ctx.arc(0, -44, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    else if (id === 'charlie') {
+      // Красный смокинг
+      ctx.fillStyle = '#d91c3c';
+      ctx.fillRect(-16, -80, 32, 44);
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(-12, -36, 9, 36);
+      ctx.fillRect(3, -36, 9, 36);
+      // Светлые длинные волосы сзади
+      ctx.fillStyle = '#ffe082';
+      ctx.beginPath();
+      ctx.moveTo(-18, -104); ctx.lineTo(-26, -42); ctx.lineTo(-6, -50); ctx.closePath();
+      ctx.fill();
+      // Голова
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(0, -96, 16, 0, Math.PI * 2); ctx.fill();
+      // Волосы сверху
+      ctx.fillStyle = '#ffe082';
+      ctx.beginPath(); ctx.arc(-2, -100, 16, Math.PI, Math.PI * 2); ctx.fill();
+      // Щёчки и глаза
+      ctx.fillStyle = '#ff3355';
+      ctx.beginPath(); ctx.arc(4, -92, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#222';
+      ctx.beginPath(); ctx.arc(6, -98, 3, 0, Math.PI * 2); ctx.fill();
+      // Кулак / Трезубец при атаке
+      ctx.fillStyle = '#ffcf56';
+      if (isAtk) {
+        ctx.fillRect(14, -64, 42, 4);
+        ctx.fillRect(52, -74, 4, 24);
+      } else {
+        ctx.beginPath(); ctx.arc(18, -58, 7, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    else if (id === 'angel') {
+      // Длинные ноги в сапогах
+      ctx.fillStyle = '#261426';
+      ctx.fillRect(-10, -42, 6, 42);
+      ctx.fillRect(4, -42, 6, 42);
+      // Торс (пушистая грудь и розовый пиджак)
+      ctx.fillStyle = '#f03e80';
+      ctx.fillRect(-14, -84, 28, 42);
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(6, -74, 11, 0, Math.PI * 2); ctx.fill();
+      // 4 руки!
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(10, -76); ctx.lineTo(26 + atkSwing, -68); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(10, -64); ctx.lineTo(24 + atkSwing * 0.7, -50); ctx.stroke();
+      // Голова и пышная чёлка
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(0, -100, 16, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ff85b3';
+      ctx.beginPath(); ctx.arc(-4, -104, 15, Math.PI * 0.8, Math.PI * 2.1); ctx.fill();
+      // Несколько паучьих глаз
+      ctx.fillStyle = '#ff1e7a';
+      ctx.beginPath(); ctx.arc(7, -100, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(5, -106, 2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+// =========================================================
+// БОЕВАЯ ЛОГИКА И ЭФФЕКТЫ
+// =========================================================
+function dealDamage(attacker, defender, dmg, knockX, knockY, stunMs) {
+  if (defender.blocking) {
+    const blockedDmg = Math.max(1, Math.round(dmg * 0.25));
+    defender.hp = Math.max(0, defender.hp - blockedDmg);
+    defender.vx = knockX * 0.4;
+    playSound('block');
+    floatingTexts.push({ x: defender.x, y: defender.y - 115, text: `БЛОК -${blockedDmg}`, color: '#ffd700', life: 650 });
+  } else {
+    defender.hp = Math.max(0, defender.hp - dmg);
+    defender.vx = knockX;
+    defender.vy = knockY;
+    defender.stunTimer = stunMs;
+    screenShake = Math.min(14, dmg * 0.6);
+    playSound('hit');
+    floatingTexts.push({ x: defender.x, y: defender.y - 115, text: `-${dmg}`, color: '#ff3355', life: 700 });
+  }
+}
+
+function spawnParticles(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 9,
+      vy: (Math.random() - 0.5) * 9 - 2,
+      r: 2 + Math.random() * 4,
+      color,
+      life: 300 + Math.random() * 250
+    });
+  }
+}
+
+function updateProjectilesAndEffects(dt) {
+  // Снаряды
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+    p.life -= dt;
+    p.x += p.vx * (dt / 16.6);
+    if (p.gravity) p.vy += p.gravity * (dt / 16.6);
+    p.y += p.vy * (dt / 16.6);
+
+    if (p.y > GROUND_Y - 10 && p.type === 'duck') {
+      p.vy = -4.5; // уточки прыгают!
+    }
+
+    const target = p.owner === p1 ? p2 : p1;
+    if (Math.abs(p.x - target.x) < p.r + 26 && Math.abs(p.y - target.centerY) < p.r + 52) {
+      dealDamage(p.owner, target, p.dmg, Math.sign(p.vx) * 5, -2.5, 220);
+      spawnParticles(p.x, p.y, p.color, 12);
+      projectiles.splice(i, 1);
+      continue;
+    }
+
+    if (p.life <= 0 || p.x < -50 || p.x > canvas.width + 50) {
+      projectiles.splice(i, 1);
+    }
+  }
+
+  // Эффекты навыков по области / рывки
+  for (let i = effects.length - 1; i >= 0; i--) {
+    const ef = effects[i];
+    ef.life -= dt;
+    const target = ef.owner === p1 ? p2 : p1;
+
+    if (!ef.hitDone) {
+      if (ef.type === 'tentacles' && ef.life < ef.maxLife - 80) {
+        ef.hitDone = true;
+        if (Math.abs(ef.x - target.x) < 75 && target.y > GROUND_Y - 95) {
+          dealDamage(ef.owner, target, ef.dmg, ef.owner.facing * 4, -9.5, 340);
+          spawnParticles(target.x, target.centerY, '#ff1e42', 16);
+        }
+      } else if (ef.type === 'radio_blast' || ef.type === 'heaven_slam') {
+        ef.hitDone = true;
+        const dist = Math.hypot(ef.x - target.x, ef.y - target.centerY);
+        if (dist < ef.radius + 25) {
+          const dir = target.x >= ef.x ? 1 : -1;
+          dealDamage(ef.owner, target, ef.dmg, dir * 10, -6, 360);
+          spawnParticles(target.x, target.centerY, ef.type === 'radio_blast' ? '#ff2a4b' : '#ffd700', 18);
+        }
+      } else if (ef.type === 'dash_aura') {
+        if (Math.abs(ef.owner.x - target.x) < 55 && Math.abs(ef.owner.y - target.y) < 90) {
+          ef.hitDone = true;
+          dealDamage(ef.owner, target, ef.dmg, ef.owner.facing * 8, -5, 320);
+          spawnParticles(target.x, target.centerY, ef.color, 15);
+        }
+      }
+    }
+
+    if (ef.life <= 0) effects.splice(i, 1);
+  }
+
+  // Частицы
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.life -= dt;
+    pt.x += pt.vx * (dt / 16.6);
+    pt.y += pt.vy * (dt / 16.6);
+    pt.vy += 0.25;
+    if (pt.life <= 0) particles.splice(i, 1);
+  }
+
+  // Плавающие цифры урона
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const ft = floatingTexts[i];
+    ft.life -= dt;
+    ft.y -= dt * 0.05;
+    if (ft.life <= 0) floatingTexts.splice(i, 1);
+  }
+}
+
+// =========================================================
+// ОТРИСОВКА АРЕН, ЭФФЕКТОВ И HUD
+// =========================================================
+function drawArena() {
+  if (selectedArena === 'hotel') {
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#2b0510');
+    grad.addColorStop(0.75, '#4a0c1c');
+    grad.addColorStop(1, '#1a0308');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Пентаграмма-окно на фоне
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.16)';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(550, 230, 140, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const a1 = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+      const a2 = ((i + 1) * 4 * Math.PI) / 5 - Math.PI / 2;
+      ctx.moveTo(550 + Math.cos(a1) * 135, 230 + Math.sin(a1) * 135);
+      ctx.lineTo(550 + Math.cos(a2) * 135, 230 + Math.sin(a2) * 135);
+    }
+    ctx.stroke();
+
+    // Колонны
+    ctx.fillStyle = '#330713';
+    ctx.fillRect(120, 0, 50, GROUND_Y);
+    ctx.fillRect(930, 0, 50, GROUND_Y);
+    ctx.fillStyle = '#d4af37';
+    ctx.fillRect(115, 45, 60, 12);
+    ctx.fillRect(925, 45, 60, 12);
+
+    // Вывеска
+    ctx.fillStyle = 'rgba(255, 42, 75, 0.18)';
+    ctx.font = '900 32px Oswald';
+    ctx.textAlign = 'center';
+    ctx.fillText('HAZBIN HOTEL', 550, 130);
+  } else if (selectedArena === 'voxtek') {
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#040c1f');
+    grad.addColorStop(1, '#092447');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Сетка неона
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.12)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < canvas.width; x += 60) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, GROUND_Y); ctx.stroke();
+    }
+    for (let y = 0; y < GROUND_Y; y += 60) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    }
+
+    // Гигантский экран ВоксТек
+    ctx.fillStyle = '#071a2e';
+    ctx.strokeStyle = '#00d2ff';
+    ctx.lineWidth = 3;
+    ctx.fillRect(350, 90, 400, 200);
+    ctx.strokeRect(350, 90, 400, 200);
+    ctx.fillStyle = 'rgba(0, 210, 255, 0.25)';
+    ctx.font = '900 44px Oswald';
+    ctx.textAlign = 'center';
+    ctx.fillText('VOXTEK', 550, 205);
+  } else {
+    // Heaven Gates
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#fffbe0');
+    grad.addColorStop(0.7, '#d4ecff');
+    grad.addColorStop(1, '#9cc9f0');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Золотые врата
+    ctx.strokeStyle = 'rgba(235, 175, 0, 0.45)';
+    ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.arc(550, 320, 170, Math.PI, 0); ctx.stroke();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.beginPath(); ctx.arc(200, 460, 120, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(900, 460, 120, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Пол арены
+  ctx.fillStyle = selectedArena === 'heaven' ? '#e8d7a5' : selectedArena === 'voxtek' ? '#071324' : '#24050e';
+  ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
+  ctx.strokeStyle = selectedArena === 'voxtek' ? '#00f0ff' : '#d4af37';
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(canvas.width, GROUND_Y); ctx.stroke();
+}
+
+function drawProjectilesAndEffects() {
+  // Снаряды
+  projectiles.forEach(p => {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    if (p.type === 'duck') {
+      // Огненная уточка Люцифера!
+      ctx.fillStyle = '#ff9900';
+      ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ffdd00';
+      ctx.beginPath(); ctx.arc(4 * Math.sign(p.vx), -6, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ff3300';
+      ctx.fillRect(8 * Math.sign(p.vx), -6, 6 * Math.sign(p.vx), 4);
+    } else if (p.type === 'holy_wave') {
+      ctx.fillStyle = '#ffd700';
+      ctx.shadowBlur = 15; ctx.shadowColor = '#ffd700';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 14, 40, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = p.color;
+      ctx.shadowBlur = 14; ctx.shadowColor = p.color;
+      ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  });
+
+  // Эффекты
+  effects.forEach(ef => {
+    const progress = 1 - ef.life / ef.maxLife;
+    ctx.save();
+    if (ef.type === 'tentacles') {
+      const h = Math.sin(progress * Math.PI) * 120;
+      ctx.fillStyle = '#120206';
+      ctx.strokeStyle = '#ff1e42';
+      ctx.lineWidth = 2;
+      [-28, 0, 28].forEach((offset, idx) => {
+        ctx.beginPath();
+        ctx.moveTo(ef.x + offset - 10, ef.y);
+        ctx.quadraticCurveTo(ef.x + offset + (idx - 1) * 14, ef.y - h * 0.6, ef.x + offset, ef.y - h);
+        ctx.lineTo(ef.x + offset + 10, ef.y);
+        ctx.fill(); ctx.stroke();
+      });
+    } else if (ef.type === 'radio_blast') {
+      ctx.strokeStyle = `rgba(255, 30, 66, ${1 - progress})`;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.arc(ef.x, ef.y, ef.radius * progress, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(255, 255, 255, ${(1 - progress) * 0.6})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(ef.x, ef.y, ef.radius * progress * 0.65, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (ef.type === 'heaven_slam') {
+      ctx.fillStyle = `rgba(255, 215, 0, ${(1 - progress) * 0.5})`;
+      ctx.beginPath();
+      ctx.arc(ef.x, ef.y - 20, ef.radius * Math.min(1, progress * 1.4), 0, Math.PI * 2);
+      ctx.fill();
+    } else if (ef.type === 'dash_aura') {
+      ctx.strokeStyle = ef.color;
+      ctx.lineWidth = 4;
+      ctx.globalAlpha = 1 - progress;
+      ctx.beginPath();
+      ctx.arc(ef.owner.x, ef.owner.centerY, 44, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  });
+
+  // Частицы
+  particles.forEach(pt => {
+    ctx.fillStyle = pt.color;
+    ctx.globalAlpha = Math.max(0, pt.life / 500);
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
+  // Цифры урона
+  floatingTexts.forEach(ft => {
+    ctx.font = '900 22px Montserrat';
+    ctx.fillStyle = ft.color;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 4;
+    ctx.textAlign = 'center';
+    ctx.strokeText(ft.text, ft.x, ft.y);
+    ctx.fillText(ft.text, ft.x, ft.y);
+  });
+}
+
+function drawHUD() {
+  // Полоска HP Игрока 1
+  drawPlayerHud(p1, 35, 24, false);
+  // Полоска HP Игрока 2 / Бота
+  drawPlayerHud(p2, canvas.width - 445, 24, true);
+
+  // Таймер раунда по центру
+  ctx.fillStyle = '#18050b';
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(canvas.width / 2 - 42, 16, 84, 58, 10);
+  ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle = roundTime <= 15 ? '#ff3355' : '#ffffff';
+  ctx.font = '900 32px Oswald';
+  ctx.textAlign = 'center';
+  ctx.fillText(Math.ceil(roundTime), canvas.width / 2, 57);
+
+  ctx.fillStyle = '#ffd700';
+  ctx.font = '700 12px Montserrat';
+  ctx.fillText(`РАУНД ${roundNumber}`, canvas.width / 2, 92);
+
+  // Баннеры состояния (БОЙ!, НОКАУТ!)
+  if (gameState === 'INTRO') {
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(0, 220, canvas.width, 110);
+    ctx.fillStyle = '#ffd700';
+    ctx.font = '900 58px Oswald';
+    ctx.textAlign = 'center';
+    ctx.fillText(stateTimer > 700 ? `РАУНД ${roundNumber}` : 'В БОЙ!', canvas.width / 2, 295);
+  } else if (gameState === 'ROUND_END') {
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(0, 220, canvas.width, 110);
+    ctx.fillStyle = '#ff2a4b';
+    ctx.font = '900 58px Oswald';
+    ctx.textAlign = 'center';
+    const msg = p1.hp <= 0 && p2.hp <= 0 ? 'НИЧЬЯ!' : (roundTime <= 0 ? 'ВРЕМЯ ВЫШЛО!' : 'НОКАУТ!');
+    ctx.fillText(msg, canvas.width / 2, 295);
+  }
+}
+
+function drawPlayerHud(fighter, x, y, alignRight) {
+  const barW = 410;
+  const barH = 26;
+
+  // Фон полоски
+  ctx.fillStyle = '#240810';
+  ctx.fillRect(x, y, barW, barH);
+
+  // Задержка урона (белая/желтая полоска)
+  const trailPct = Math.max(0, fighter.trailHp / fighter.maxHp);
+  ctx.fillStyle = '#ffd700';
+  if (alignRight) ctx.fillRect(x + barW * (1 - trailPct), y, barW * trailPct, barH);
+  else ctx.fillRect(x, y, barW * trailPct, barH);
+
+  // Текущее HP
+  const hpPct = Math.max(0, fighter.hp / fighter.maxHp);
+  ctx.fillStyle = alignRight ? '#00b4d8' : '#e6193c';
+  if (alignRight) ctx.fillRect(x + barW * (1 - hpPct), y, barW * hpPct, barH);
+  else ctx.fillRect(x, y, barW * hpPct, barH);
+
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, barW, barH);
+
+  // Имя + очки побед (звёздочки)
+  ctx.fillStyle = '#fff';
+  ctx.font = '700 17px Montserrat';
+  ctx.textAlign = alignRight ? 'right' : 'left';
+  const label = (fighter.isBot ? '🤖 ' : '') + fighter.data.name.toUpperCase();
+  ctx.fillText(label, alignRight ? x + barW : x, y + 48);
+
+  const wins = fighter.isPlayer1 ? p1Wins : p2Wins;
+  for (let w = 0; w < 2; w++) {
+    const wx = alignRight ? x + w * 22 + 10 : x + barW - w * 22 - 10;
+    ctx.fillStyle = w < wins ? '#ffd700' : '#42121e';
+    ctx.beginPath(); ctx.arc(wx, y + 42, 7, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Кулдауны скилов (внизу HUD)
+  const sk1Key = fighter.isPlayer1 ? 'G' : 'K/2';
+  const sk2Key = fighter.isPlayer1 ? 'H' : 'L/3';
+  drawCooldownBox(alignRight ? x + barW - 140 : x, y + 60, fighter.data.skill1Name, sk1Key, fighter.cd1, fighter.data.skill1Cd);
+  drawCooldownBox(alignRight ? x + barW - 290 : x + 150, y + 60, fighter.data.skill2Name, sk2Key, fighter.cd2, fighter.data.skill2Cd);
+}
+
+function drawCooldownBox(x, y, name, key, cd, maxCd) {
+  ctx.fillStyle = cd <= 0 ? 'rgba(255, 215, 0, 0.2)' : 'rgba(0,0,0,0.6)';
+  ctx.strokeStyle = cd <= 0 ? '#ffd700' : '#663344';
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(x, y, 142, 26);
+  ctx.strokeRect(x, y, 142, 26);
+
+  if (cd > 0) {
+    const pct = cd / maxCd;
+    ctx.fillStyle = 'rgba(255, 40, 70, 0.45)';
+    ctx.fillRect(x, y, 142 * pct, 26);
+  }
+
+  ctx.fillStyle = cd <= 0 ? '#fff' : '#aaa';
+  ctx.font = '700 10px Montserrat';
+  ctx.textAlign = 'left';
+  const shortName = name.length > 15 ? name.slice(0, 14) + '…' : name;
+  ctx.fillText(`[${key}] ${shortName}`, x + 5, y + 17);
+}
+
+// =========================================================
+// УПРАВЛЕНИЕ МАТЧЕМ И ГЛАВНЫЙ ЦИКЛ
+// =========================================================
+function startMatch() {
+  initAudio();
+  document.getElementById('menu-overlay').style.display = 'none';
+  document.getElementById('post-match-overlay').style.display = 'none';
+  document.getElementById('btn-back-menu').style.display = 'block';
+
+  roundNumber = 1;
+  p1Wins = 0;
+  p2Wins = 0;
+  setupRound();
+}
+
+function setupRound() {
+  p1 = new Fighter(CHARACTERS[p1CharIdx], 240, 1, true, false);
+  p2 = new Fighter(CHARACTERS[p2CharIdx], canvas.width - 240, -1, false, gameMode === 'bot');
+  projectiles = [];
+  effects = [];
+  particles = [];
+  floatingTexts = [];
+  roundTime = 99;
+  gameState = 'INTRO';
+  stateTimer = 1500;
+}
+
+function returnToMenu() {
+  gameState = 'MENU';
+  document.getElementById('menu-overlay').style.display = 'flex';
+  document.getElementById('post-match-overlay').style.display = 'none';
+  document.getElementById('btn-back-menu').style.display = 'none';
+}
+
+function endMatch(winnerText, subText) {
+  gameState = 'MATCH_END';
+  document.getElementById('winner-title').innerText = winnerText;
+  document.getElementById('winner-sub').innerText = subText;
+  document.getElementById('post-match-overlay').style.display = 'flex';
+}
+
+let lastTime = performance.now();
+function gameLoop(now) {
+  let dt = now - lastTime;
+  lastTime = now;
+  if (dt > 50) dt = 50;
+
+  if (slowMoTimer > 0) {
+    slowMoTimer -= dt;
+    dt *= 0.35;
+  }
+
+  if (gameState !== 'MENU') {
+    if (gameState === 'INTRO') {
+      stateTimer -= dt;
+      if (stateTimer <= 0) gameState = 'FIGHTING';
+    } else if (gameState === 'FIGHTING') {
+      roundTime -= dt / 1000;
+      p1.update(dt, p2);
+      p2.update(dt, p1);
+      updateProjectilesAndEffects(dt);
+
+      if (p1.hp <= 0 || p2.hp <= 0 || roundTime <= 0) {
+        gameState = 'ROUND_END';
+        stateTimer = 2100;
+        slowMoTimer = 800;
+        playSound('ko');
+
+        if (p1.hp > p2.hp) p1Wins++;
+        else if (p2.hp > p1.hp) p2Wins++;
+      }
+    } else if (gameState === 'ROUND_END') {
+      p1.update(dt, p2);
+      p2.update(dt, p1);
+      updateProjectilesAndEffects(dt);
+      stateTimer -= dt;
+
+      if (stateTimer <= 0) {
+        if (p1Wins >= 2 || p2Wins >= 2) {
+          const p1Won = p1Wins > p2Wins;
+          const winFighter = p1Won ? p1 : p2;
+          const title = p1Won ? 'ПОБЕДА ИГРОКА 1!' : (gameMode === 'bot' ? 'БОТ ПОБЕДИЛ!' : 'ПОБЕДА ИГРОКА 2!');
+          endMatch(title, `${winFighter.data.name} (${winFighter.data.role}) побеждает со счётом ${p1Wins}:${p2Wins}!`);
+        } else {
+          roundNumber++;
+          setupRound();
+        }
+      }
+    }
+
+    // Рендер сцены
+    ctx.save();
+    if (screenShake > 0) {
+      ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+      screenShake *= 0.82;
+      if (screenShake < 0.4) screenShake = 0;
+    }
+
+    drawArena();
+    p1.draw(ctx);
+    p2.draw(ctx);
+    drawProjectilesAndEffects();
+    ctx.restore();
+
+    drawHUD();
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// Клавиатура
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+    e.preventDefault();
+  }
+});
+window.addEventListener('keyup', (e) => {
+  keys[e.code] = false;
+});
+
+initMenu();
+setMode('bot');
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
